@@ -59,7 +59,7 @@ ask_yes_no() {
     done
 }
 
-# Function to get port input
+# Function to get port input - sets global variable PORT_RESULT
 get_port() {
     local prompt="$1"
     local default="$2"
@@ -71,7 +71,7 @@ get_port() {
         port=${port:-$default}
         
         if [[ "$port" =~ ^[0-9]+$ ]] && [ "$port" -ge 1 ] && [ "$port" -le 65535 ]; then
-            echo "$port"
+            PORT_RESULT="$port"
             return 0
         else
             print_error "Invalid port number. Please enter a number between 1 and 65535."
@@ -79,13 +79,51 @@ get_port() {
     done
 }
 
-# Function to get interface input
+# Function to get interface input - sets global variable INTERFACE_RESULT
 get_interface() {
     local interface
     
     echo ""
     echo "Available network interfaces:"
-    ip addr show | grep -E '^[0-9]+:' | awk '{print "  " $2}' | sed 's/:$//'
+    
+    # Use ip command to show interfaces with their IP addresses
+    if command -v ip >/dev/null 2>&1; then
+        timeout 5 ip -o -4 addr show 2>/dev/null | awk '
+        {
+            iface = $2
+            ip = $4
+            gsub(/\/.*/, "", ip)  # Remove CIDR notation
+            if (ip != "127.0.0.1") {
+                if (iface_ips[iface] == "") {
+                    iface_ips[iface] = ip
+                } else {
+                    iface_ips[iface] = iface_ips[iface] ", " ip
+                }
+            }
+        }
+        END {
+            for (iface in iface_ips) {
+                printf "  %s (%s)\n", iface, iface_ips[iface]
+            }
+        }' | sort
+        
+        # Also show interfaces without IP addresses
+        timeout 5 ip link show 2>/dev/null | awk '
+        /^[0-9]+:/ { 
+            iface = $2
+            gsub(/:/, "", iface)
+            if (iface != "lo") interfaces[iface] = 1
+        }
+        END {
+            for (iface in interfaces) print iface
+        }' | while read -r iface; do
+            if ! timeout 5 ip -o -4 addr show "$iface" 2>/dev/null | grep -q "inet"; then
+                echo "  $iface"
+            fi
+        done | sort
+    else
+        echo "  (ip command not available)"
+    fi
     echo ""
     
     while true; do
@@ -100,18 +138,18 @@ get_interface() {
         
         case "$choice" in
             1)
-                echo ""
+                INTERFACE_RESULT=""
                 return 0
                 ;;
             2)
-                echo "localhost"
+                INTERFACE_RESULT="localhost"
                 return 0
                 ;;
             3)
                 echo -n "Enter interface name or IP address: "
                 read -r interface
                 if [ -n "$interface" ]; then
-                    echo "$interface"
+                    INTERFACE_RESULT="$interface"
                     return 0
                 else
                     print_error "Interface cannot be empty."
@@ -190,13 +228,17 @@ if [ "$INSTALL_NOVNC" = true ]; then
         print_info "Configuring NoVNC..."
         
         # Get ports
-        NOVNC_PORT=$(get_port "NoVNC web port" "8080")
-        VNC_PORT=$(get_port "VNC server port" "5900")
+        get_port "NoVNC web port" "8080"
+        NOVNC_PORT="$PORT_RESULT"
+        
+        get_port "VNC server port" "5900"
+        VNC_PORT="$PORT_RESULT"
         
         # Get interface binding
         echo ""
         print_info "Choose how NoVNC should be accessible:"
-        INTERFACE=$(get_interface)
+        get_interface
+        INTERFACE="$INTERFACE_RESULT"
         
         # Build command arguments
         NOVNC_ARGS=()
