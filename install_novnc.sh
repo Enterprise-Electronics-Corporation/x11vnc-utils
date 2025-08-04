@@ -5,6 +5,9 @@
 
 set -e
 
+# Get the directory where this script is located
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
 SERVICE_NAME="novnc"
 SERVICE_FILE="/etc/systemd/system/${SERVICE_NAME}.service"
 NOVNC_DIR="/opt/novnc"
@@ -172,7 +175,7 @@ install_novnc() {
     
     # Copy index.html from src directory
     echo "Copying NoVNC configuration..."
-    cp ./src/index.html "$NOVNC_DIR/index.html"
+    cp "$SCRIPT_DIR/src/index.html" "$NOVNC_DIR/index.html"
 
     echo "NoVNC configuration copied successfully"
 }

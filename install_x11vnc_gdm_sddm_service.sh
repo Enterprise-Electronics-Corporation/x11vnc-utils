@@ -1,6 +1,9 @@
 #!/bin/bash
 set -e
 
+# Get the directory where this script is located
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
 WRAPPER_SCRIPT="/usr/local/bin/x11vnc-wrapper.sh"
 SERVICE_FILE="/etc/systemd/system/x11vnc.service"
 
@@ -24,7 +27,7 @@ fi
 
 echo "🛠 Copying x11vnc wrapper script with GDM and SDDM support..."
 
-cp ./src/x11vnc-wrapper.sh "$WRAPPER_SCRIPT"
+cp "$SCRIPT_DIR/src/x11vnc-wrapper.sh" "$WRAPPER_SCRIPT"
 
 chmod +x "$WRAPPER_SCRIPT"
 
