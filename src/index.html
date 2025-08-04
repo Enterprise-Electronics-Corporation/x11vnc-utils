@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>VNC Remote Desktop</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/png" sizes="16x16" href="app/images/icons/novnc-16x16.png">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(45deg, #1e3c72, #2a5298);
+            color: white;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .container {
+            text-align: center;
+            background: rgba(255,255,255,0.1);
+            padding: 30px;
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+        }
+        .logo {
+            font-size: 48px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            background: linear-gradient(45deg, #00ff00, #ffff00);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .loading {
+            margin: 20px 0;
+        }
+        .spinner {
+            border: 4px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top: 4px solid #00ff00;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .manual-link {
+            margin-top: 20px;
+        }
+        .manual-link a {
+            color: #00ff00;
+            text-decoration: none;
+            font-weight: bold;
+        }
+        .manual-link a:hover {
+            text-decoration: underline;
+        }
+        .features {
+            margin-top: 15px;
+            font-size: 14px;
+            color: rgba(255,255,255,0.8);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">noVNC</div>
+        <div class="loading">
+            <div class="spinner"></div>
+            <p>Connecting to VNC server...</p>
+        </div>
+        <div class="features">
+            <p>✓ Auto-connect enabled</p>
+            <p>✓ Auto-reconnect enabled</p>
+            <p>✓ Optimal scaling</p>
+        </div>
+        <div class="manual-link">
+            <p>If you are not redirected automatically:</p>
+            <a href="vnc.html" id="manual-link">Click here to connect manually</a>
+        </div>
+    </div>
+
+    <script>
+        // Get current location details
+        var host = window.location.hostname;
+        var port = window.location.port;
+        
+        // Build the VNC URL with auto-reconnect and optimal settings
+        var vncUrl = 'vnc.html?' + 
+                     'host=' + encodeURIComponent(host) + 
+                     '&port=' + encodeURIComponent(port) + 
+                     '&autoconnect=true' +
+                     '&reconnect=true' +
+                     '&reconnect_delay=2000' +
+                     '&resize=scale' +
+                     '&quality=6' +
+                     '&compression=2';
+        
+        // Update manual link
+        document.getElementById('manual-link').href = vncUrl;
+        
+        // Auto-redirect after 2 seconds
+        setTimeout(function() {
+            window.location.href = vncUrl;
+        }, 2000);
+        
+        // Log connection details for debugging
+        console.log('NoVNC Connection Details:');
+        console.log('Host:', host);
+        console.log('Port:', port);
+        console.log('Auto-reconnect: enabled (2s delay)');
+        console.log('VNC URL:', vncUrl);
+    </script>
+</body>
+</html>
