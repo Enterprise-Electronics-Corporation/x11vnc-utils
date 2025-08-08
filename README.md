@@ -148,13 +148,15 @@ sudo journalctl -u x11vnc -u novnc -u dufs -f
 sudo systemctl restart x11vnc novnc dufs
 ```
 
-### Uninstall Services
+### Uninstall All Services
+
+To remove all x11vnc-utils services and components at once, use the provided master uninstall script:
 
 ```bash
-sudo ./install_x11vnc_gdm_sddm_service.sh --uninstall
-sudo ./install_novnc.sh --uninstall
-sudo ./install_dufs.sh --uninstall
+sudo ./uninstall_all.sh
 ```
+
+This will call the uninstall routines for x11vnc, NoVNC, and dufs (if present).
 
 ## SSH Tunneling (for localhost-only setups)
 
