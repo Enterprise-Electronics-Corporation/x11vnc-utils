@@ -85,7 +85,7 @@ if ! command -v dufs >/dev/null 2>&1 && [ ! -f "$DUFS_BIN" ]; then
     if [ -z "$DUFS_VERSION" ]; then
         print_error "Could not determine latest dufs version."; exit 1
     fi
-    DUFS_TAR="dufs-${DUFS_VERSION#v}-$DUFS_ARCH.tar.gz"
+    DUFS_TAR="dufs-${DUFS_VERSION}-$DUFS_ARCH.tar.gz"
     DUFS_URL="https://github.com/sigoden/dufs/releases/download/$DUFS_VERSION/$DUFS_TAR"
     TMP_DIR=$(mktemp -d)
     print_info "Downloading $DUFS_URL ..."
