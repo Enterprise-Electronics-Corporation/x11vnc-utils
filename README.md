@@ -19,10 +19,12 @@ A collection of utilities for setting up and managing x11vnc VNC server with NoV
 - Active X11 session with supported display manager
 
 ### Supported Display Managers
+
 - **GDM** (GNOME Display Manager)
 - **SDDM** (Simple Desktop Display Manager)
 
 ### Tested Platforms
+
 - **OpenSUSE 15.5**
 - **Rocky Linux 9** (RHEL-compatible)
 
@@ -48,6 +50,7 @@ A collection of utilities for setting up and managing x11vnc VNC server with NoV
 ## Quick Start
 
 1. **Run the interactive setup:**
+
    ```bash
    sudo ./setup.sh
    ```
@@ -59,11 +62,13 @@ A collection of utilities for setting up and managing x11vnc VNC server with NoV
 ## Manual Installation
 
 ### Install x11vnc Service Only
+
 ```bash
 sudo ./install_x11vnc_gdm_sddm_service.sh
 ```
 
 ### Install NoVNC Web Client Only
+
 ```bash
 # Default configuration (all interfaces, port 8080)
 sudo ./install_novnc.sh
@@ -79,13 +84,13 @@ sudo ./install_novnc.sh --port 9090 --interface eth0
 
 ### NoVNC Installation Options
 
-| Option | Description | Example |
-|--------|-------------|---------|
-| `--port PORT` | Set NoVNC web port | `--port 9090` |
-| `--vnc-port PORT` | Set VNC server port | `--vnc-port 5901` |
-| `--localhost` | Bind to localhost only | `--localhost` |
+| Option              | Description                | Example            |
+| ------------------- | -------------------------- | ------------------ |
+| `--port PORT`       | Set NoVNC web port         | `--port 9090`      |
+| `--vnc-port PORT`   | Set VNC server port        | `--vnc-port 5901`  |
+| `--localhost`       | Bind to localhost only     | `--localhost`      |
 | `--interface IFACE` | Bind to specific interface | `--interface eth0` |
-| `--uninstall` | Remove NoVNC installation | `--uninstall` |
+| `--uninstall`       | Remove NoVNC installation  | `--uninstall`      |
 
 ### Security Considerations
 
@@ -96,21 +101,25 @@ sudo ./install_novnc.sh --port 9090 --interface eth0
 ## Service Management
 
 ### Check Service Status
+
 ```bash
 sudo systemctl status x11vnc novnc
 ```
 
 ### View Service Logs
+
 ```bash
 sudo journalctl -u x11vnc -u novnc -f
 ```
 
 ### Restart Services
+
 ```bash
 sudo systemctl restart x11vnc novnc
 ```
 
 ### Uninstall Services
+
 ```bash
 sudo ./install_x11vnc_gdm_sddm_service.sh --uninstall
 sudo ./install_novnc.sh --uninstall
@@ -151,6 +160,51 @@ xauth list
 # Check display sockets
 ls -la /tmp/.X11-unix/
 ```
+
+## dufs File Server Integration
+
+- Optional install via interactive setup
+- Downloads binary, sets up systemd service
+- User can choose port, root dir, interface, and authentication
+- Uninstall supported
+- Service status and useful commands shown in summary
+
+### Usage
+
+**Install dufs:**
+Run the setup script and follow prompts:
+
+```sh
+sudo ./setup.sh
+```
+
+**Uninstall dufs:**
+
+```sh
+sudo ./install_dufs.sh --uninstall
+```
+
+**Service management:**
+
+```sh
+sudo systemctl status dufs
+sudo systemctl restart dufs
+sudo journalctl -u dufs -f
+```
+
+**Access:**
+
+- Default: http://<host>:8180
+- Root dir: /root/Downloads (configurable)
+- Auth: optional, set during setup
+
+**Features enabled:**
+
+- Upload, delete, search, archive
+
+---
+
+See the setup script for more details and options.
 
 ## License
 
