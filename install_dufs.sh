@@ -90,12 +90,19 @@ fi
 
 # Build dufs command with correct flags
 CMD="$DUFS_BIN"
-# Bind address logic
+# Bind address logic (must be IP address for dufs)
 if [ -n "$INTERFACE" ]; then
     if [ "$INTERFACE" = "localhost" ]; then
         BIND_ADDR="127.0.0.1"
-    else
+    elif [[ "$INTERFACE" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+        # Direct IPv4 address
         BIND_ADDR="$INTERFACE"
+    else
+        # Try to resolve interface name to IP address
+        BIND_ADDR=$(ip -4 addr show "$INTERFACE" 2>/dev/null | awk '/inet / {print $2}' | cut -d/ -f1 | head -n1)
+        if [ -z "$BIND_ADDR" ]; then
+            print_error "Could not resolve interface '$INTERFACE' to an IPv4 address."; exit 1
+        fi
     fi
     CMD="$CMD --bind $BIND_ADDR:$PORT"
 else
