@@ -239,7 +239,7 @@ echo "==============================="
 print_info "dufs provides a simple web file server with upload, delete, search, and archive support."
 print_info "You can use it to transfer files to/from this machine via your browser."
 echo ""
-if ask_yes_no "Install dufs file server?" "n"; then
+if ask_yes_no "Install dufs file server?" "y"; then
     # Get dufs configuration
     echo ""
     print_info "Configuring dufs..."
