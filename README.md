@@ -6,6 +6,7 @@ A collection of utilities for setting up and managing x11vnc VNC server with NoV
 
 - **x11vnc Service**: Automatic VNC server setup with support for GDM and SDDM display managers
 - **NoVNC Web Client**: Browser-based VNC access with auto-reconnect functionality
+- **dufs File Server**: Web file server with upload, delete, search, and archive support, authentication, and systemd integration
 - **Interactive Setup**: User-friendly installation script with configuration options
 - **Security Options**: Support for localhost-only or specific interface binding
 - **Auto-detection**: Intelligent detection of X11 authentication and display configuration
@@ -56,8 +57,14 @@ A collection of utilities for setting up and managing x11vnc VNC server with NoV
    ```
 
 2. **Access your desktop:**
+
    - Via web browser: `http://your-server-ip:8080`
    - Via VNC client: `your-server-ip:5900`
+
+3. **Access dufs file server:**
+   - Via web browser: `http://your-server-ip:8180` (or custom port)
+   - Default root: `/root/Downloads` (configurable)
+   - Authentication: Optional, set during setup
 
 ## Manual Installation
 
@@ -80,9 +87,32 @@ sudo ./install_novnc.sh --localhost
 sudo ./install_novnc.sh --port 9090 --interface eth0
 ```
 
+### Install dufs File Server Only
+
+```bash
+# Default configuration (all interfaces, port 8180, /root/Downloads)
+sudo ./install_dufs.sh
+
+# Custom port, root, interface, and authentication
+sudo ./install_dufs.sh --port 9000 --root /srv/files --interface eth0 --auth user:pass
+
+# Uninstall dufs
+sudo ./install_dufs.sh --uninstall
+```
+
 ## Configuration Options
 
 ### NoVNC Installation Options
+
+### dufs Installation Options
+
+| Option              | Description                      | Example             |
+| ------------------- | -------------------------------- | ------------------- |
+| `--port PORT`       | Set dufs web port                | `--port 9000`       |
+| `--root DIR`        | Set root directory to serve      | `--root /srv/files` |
+| `--interface IFACE` | Bind to specific interface or IP | `--interface eth0`  |
+| `--auth USER:PASS`  | Require authentication           | `--auth user:pass`  |
+| `--uninstall`       | Remove dufs installation         | `--uninstall`       |
 
 | Option              | Description                | Example            |
 | ------------------- | -------------------------- | ------------------ |
@@ -103,19 +133,19 @@ sudo ./install_novnc.sh --port 9090 --interface eth0
 ### Check Service Status
 
 ```bash
-sudo systemctl status x11vnc novnc
+sudo systemctl status x11vnc novnc dufs
 ```
 
 ### View Service Logs
 
 ```bash
-sudo journalctl -u x11vnc -u novnc -f
+sudo journalctl -u x11vnc -u novnc -u dufs -f
 ```
 
 ### Restart Services
 
 ```bash
-sudo systemctl restart x11vnc novnc
+sudo systemctl restart x11vnc novnc dufs
 ```
 
 ### Uninstall Services
@@ -123,6 +153,7 @@ sudo systemctl restart x11vnc novnc
 ```bash
 sudo ./install_x11vnc_gdm_sddm_service.sh --uninstall
 sudo ./install_novnc.sh --uninstall
+sudo ./install_dufs.sh --uninstall
 ```
 
 ## SSH Tunneling (for localhost-only setups)
@@ -160,51 +191,6 @@ xauth list
 # Check display sockets
 ls -la /tmp/.X11-unix/
 ```
-
-## dufs File Server Integration
-
-- Optional install via interactive setup
-- Downloads binary, sets up systemd service
-- User can choose port, root dir, interface, and authentication
-- Uninstall supported
-- Service status and useful commands shown in summary
-
-### Usage
-
-**Install dufs:**
-Run the setup script and follow prompts:
-
-```sh
-sudo ./setup.sh
-```
-
-**Uninstall dufs:**
-
-```sh
-sudo ./install_dufs.sh --uninstall
-```
-
-**Service management:**
-
-```sh
-sudo systemctl status dufs
-sudo systemctl restart dufs
-sudo journalctl -u dufs -f
-```
-
-**Access:**
-
-- Default: http://<host>:8180
-- Root dir: /root/Downloads (configurable)
-- Auth: optional, set during setup
-
-**Features enabled:**
-
-- Upload, delete, search, archive
-
----
-
-See the setup script for more details and options.
 
 ## License
 
