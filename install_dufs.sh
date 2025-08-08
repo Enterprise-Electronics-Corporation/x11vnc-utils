@@ -67,24 +67,48 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-# Download dufs binary if not present
+# Download and extract dufs binary if not present
 if ! command -v dufs >/dev/null 2>&1 && [ ! -f "$DUFS_BIN" ]; then
-    print_info "Downloading latest dufs release..."
+    print_info "Downloading latest dufs release info..."
     ARCH=$(uname -m)
-    OS=$(uname -s | tr '[:upper:]' '[:lower:]')
     # Map arch to dufs release naming
     case "$ARCH" in
         x86_64)
-            DUFS_ARCH="x86_64";;
+            DUFS_ARCH="x86_64-unknown-linux-musl";;
         aarch64|arm64)
-            DUFS_ARCH="aarch64";;
+            DUFS_ARCH="aarch64-unknown-linux-musl";;
         *)
             print_error "Unsupported architecture: $ARCH"; exit 1;;
     esac
-    DUFS_URL="https://github.com/sigoden/dufs/releases/latest/download/dufs-$OS-$DUFS_ARCH"
-    curl -L "$DUFS_URL" -o "$DUFS_BIN"
+    # Get latest version tag from GitHub API
+    DUFS_VERSION=$(curl -s https://api.github.com/repos/sigoden/dufs/releases/latest | grep '"tag_name"' | head -n1 | cut -d '"' -f4)
+    if [ -z "$DUFS_VERSION" ]; then
+        print_error "Could not determine latest dufs version."; exit 1
+    fi
+    DUFS_TAR="dufs-${DUFS_VERSION#v}-$DUFS_ARCH.tar.gz"
+    DUFS_URL="https://github.com/sigoden/dufs/releases/download/$DUFS_VERSION/$DUFS_TAR"
+    TMP_DIR=$(mktemp -d)
+    print_info "Downloading $DUFS_URL ..."
+    if ! curl -L "$DUFS_URL" -o "$TMP_DIR/$DUFS_TAR"; then
+        print_error "Failed to download dufs release archive."; rm -rf "$TMP_DIR"; exit 1
+    fi
+    print_info "Extracting dufs binary..."
+    if ! tar -xzf "$TMP_DIR/$DUFS_TAR" -C "$TMP_DIR"; then
+        print_error "Failed to extract dufs archive."; rm -rf "$TMP_DIR"; exit 1
+    fi
+    # Find the dufs binary in the extracted files
+    DUFS_EXTRACTED=$(find "$TMP_DIR" -type f -name dufs | head -n1)
+    if [ ! -f "$DUFS_EXTRACTED" ]; then
+        print_error "dufs binary not found in archive."; rm -rf "$TMP_DIR"; exit 1
+    fi
+    mv "$DUFS_EXTRACTED" "$DUFS_BIN"
     chmod +x "$DUFS_BIN"
+    # Check if the binary is valid (not a text file)
+    if ! file "$DUFS_BIN" | grep -q 'ELF'; then
+        print_error "Downloaded dufs binary is not valid."; rm -f "$DUFS_BIN"; rm -rf "$TMP_DIR"; exit 1
+    fi
     print_success "dufs installed to $DUFS_BIN"
+    rm -rf "$TMP_DIR"
 fi
 
 
