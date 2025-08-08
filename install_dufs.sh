@@ -87,18 +87,27 @@ if ! command -v dufs >/dev/null 2>&1 && [ ! -f "$DUFS_BIN" ]; then
     print_success "dufs installed to $DUFS_BIN"
 fi
 
-# Build dufs command
-CMD="$DUFS_BIN --port $PORT --enable-upload --enable-delete --enable-search --enable-archive"
+
+# Build dufs command with correct flags
+CMD="$DUFS_BIN"
+# Bind address logic
 if [ -n "$INTERFACE" ]; then
     if [ "$INTERFACE" = "localhost" ]; then
-        CMD="$CMD --host 127.0.0.1"
+        BIND_ADDR="127.0.0.1"
     else
-        CMD="$CMD --host $INTERFACE"
+        BIND_ADDR="$INTERFACE"
     fi
+    CMD="$CMD --bind $BIND_ADDR:$PORT"
+else
+    CMD="$CMD --bind 0.0.0.0:$PORT"
 fi
+# Allow features
+CMD="$CMD --allow-upload --allow-delete --allow-search --allow-archive"
+# Auth logic (syntax: -a, --auth <rules> Add auth roles, e.g. user:pass@/dir1:rw,/dir2)
 if [ -n "$AUTH" ]; then
     CMD="$CMD --auth $AUTH"
 fi
+# Serve path
 CMD="$CMD $ROOT"
 
 # Create systemd service file
