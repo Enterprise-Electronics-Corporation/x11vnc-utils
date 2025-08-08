@@ -126,9 +126,9 @@ if [ -n "$INTERFACE" ]; then
             print_error "Could not resolve interface '$INTERFACE' to an IPv4 address."; exit 1
         fi
     fi
-    CMD="$CMD --bind $BIND_ADDR:$PORT"
+    CMD="$CMD --bind $BIND_ADDR --port $PORT"
 else
-    CMD="$CMD --bind 0.0.0.0:$PORT"
+    CMD="$CMD --bind 0.0.0.0 --port $PORT"
 fi
 # Allow features
 CMD="$CMD --allow-upload --allow-delete --allow-search --allow-archive"
