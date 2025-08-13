@@ -42,6 +42,7 @@ A collection of utilities for setting up and managing x11vnc VNC server with NoV
 - `setup.sh` - Interactive installer for x11vnc and NoVNC services
 - `install_x11vnc_gdm_sddm_service.sh` - x11vnc systemd service installer
 - `install_novnc.sh` - NoVNC web client installer with configuration options
+- `install_dufs.sh` - dufs file server installer and uninstaller
 - `src/x11vnc-wrapper.sh` - Wrapper script for x11vnc with display manager support
 
 ### Web Interface
