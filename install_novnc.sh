@@ -223,8 +223,7 @@ create_service() {
 [Unit]
 Description=$description
 Documentation=https://github.com/novnc/noVNC
-After=x11vnc.service network.target
-Wants=x11vnc.service
+After=x11vnc.service network.target graphical.target
 
 [Service]
 Type=simple
@@ -239,7 +238,7 @@ StandardError=journal
 SyslogIdentifier=novnc
 
 [Install]
-WantedBy=default.target
+WantedBy=graphical.target
 EOF
     
     systemctl daemon-reload
