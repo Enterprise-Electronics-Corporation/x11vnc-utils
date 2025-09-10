@@ -48,7 +48,7 @@ StandardError=journal
 User=root
 
 [Install]
-WantedBy=multi-user.target
+WantedBy=graphical.target
 EOF
 
 echo "🔄 Reloading systemd and enabling service..."
