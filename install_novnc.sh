@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Simple NoVNC installer for x11vnc service
+# Simple NoVNC installer for x0vncserver service
 # This script installs NoVNC web client on port 8080 with auto-reconnect
 
 set -e
@@ -223,7 +223,7 @@ create_service() {
 [Unit]
 Description=$description
 Documentation=https://github.com/novnc/noVNC
-After=x11vnc.service network.target graphical.target
+After=x0vncserver.service network.target graphical.target
 
 [Service]
 Type=simple
@@ -282,10 +282,10 @@ install_novnc_service() {
     echo "  Auto-Reconnect: Enabled (2s delay)"
     echo ""
     
-    # Check if x11vnc service exists
-    if ! systemctl list-unit-files | grep -q "x11vnc.service"; then
-        echo "WARNING: x11vnc service not found."
-        echo "Make sure to install x11vnc service first for this to work."
+    # Check if x0vncserver service exists
+    if ! systemctl list-unit-files | grep -q "x0vncserver.service"; then
+        echo "WARNING: x0vncserver service not found."
+        echo "Make sure to install x0vncserver service first for this to work."
         echo ""
     fi
     

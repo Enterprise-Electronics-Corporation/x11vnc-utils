@@ -1,6 +1,6 @@
 #!/bin/bash
 
-X11VNC_BIN="/usr/bin/x11vnc"
+X0VNCSERVER_BIN="/usr/bin/x0vncserver"
 LISTEN_OPTION="-localhost"
 RFBPORT="5900"
 
@@ -8,8 +8,8 @@ log_message() {
     echo "$(date '+%Y-%m-%d %H:%M:%S') - $*" >&2
 }
 
-cleanup_stale_x11vnc() {
-    pkill -f "x11vnc.*$RFBPORT" 2>/dev/null || true
+cleanup_stale_x0vncserver() {
+    pkill -f "x0vncserver.*$RFBPORT" 2>/dev/null || true
     sleep 1
 }
 
@@ -153,8 +153,8 @@ find_logged_in_user_info() {
 }
 
 while true; do
-    log_message "=== x11vnc service starting ==="
-    cleanup_stale_x11vnc
+    log_message "=== x0vncserver service starting ==="
+    cleanup_stale_x0vncserver
 
     # Wait up to 30s for a display socket
     for _ in {1..30}; do
@@ -178,16 +178,16 @@ while true; do
     if [[ -n "$USER_INFO" ]]; then
         # Someone is logged in - run as that user
         IFS=':' read -r username uid auth_file <<< "$USER_INFO"
-        log_message "✅ User $username logged in, running x11vnc as user $username with auth $auth_file"
+        log_message "✅ User $username logged in, running x0vncserver as user $username with auth $auth_file"
         
         # Verify the user exists
         if ! id "$username" >/dev/null 2>&1; then
             log_message "❌ User $username not found, falling back to X process auth detection"
         else
-            # Run x11vnc as the logged-in user
+            # Run x0vncserver as the logged-in user
             exec sudo -u "$username" \
                 env DISPLAY="$DISPLAY" XAUTHORITY="$auth_file" \
-                $X11VNC_BIN -display "$DISPLAY" -nopw -forever -shared -rfbport $RFBPORT $LISTEN_OPTION
+                $X0VNCSERVER_BIN -display "$DISPLAY" -SecurityTypes=None -AlwaysShared -rfbport $RFBPORT $LISTEN_OPTION
         fi
     fi
     
@@ -195,7 +195,7 @@ while true; do
     AUTH_FILE=$(find_x_auth_from_process "$DISPLAY")
     if [[ -n "$AUTH_FILE" ]]; then
         log_message "✅ Using auth file from X process: $AUTH_FILE on DISPLAY $DISPLAY"
-        exec $X11VNC_BIN -auth "$AUTH_FILE" -display "$DISPLAY" -nopw -forever -shared -rfbport $RFBPORT $LISTEN_OPTION
+        exec $X0VNCSERVER_BIN -auth "$AUTH_FILE" -display "$DISPLAY" -SecurityTypes=None -AlwaysShared -rfbport $RFBPORT $LISTEN_OPTION
     fi
     
     # Fallback to GDM detection
@@ -203,14 +203,14 @@ while true; do
         AUTH_FILE=$(find_gdm_auth)
         if [[ -n "$AUTH_FILE" ]]; then
             log_message "✅ GDM greeter: using -auth $AUTH_FILE on DISPLAY $DISPLAY"
-            exec $X11VNC_BIN -auth "$AUTH_FILE" -display "$DISPLAY" -nopw -forever -shared -rfbport $RFBPORT $LISTEN_OPTION -noshm
+            exec $X0VNCSERVER_BIN -auth "$AUTH_FILE" -display "$DISPLAY" -SecurityTypes=None -AlwaysShared -rfbport $RFBPORT $LISTEN_OPTION
         fi
     fi
 
     # Last resort - try -auth guess
     log_message "⚠️  No valid Xauthority found, trying -auth guess on DISPLAY $DISPLAY"
-    $X11VNC_BIN -auth guess -display "$DISPLAY" -nopw -forever -shared -rfbport $RFBPORT $LISTEN_OPTION || {
-        log_message "❌ x11vnc failed, restarting in 10 seconds"
+    $X0VNCSERVER_BIN -auth guess -display "$DISPLAY" -SecurityTypes=None -AlwaysShared -rfbport $RFBPORT $LISTEN_OPTION || {
+        log_message "❌ x0vncserver failed, restarting in 10 seconds"
         sleep 10
     }
 

@@ -4,28 +4,28 @@ set -e
 # Get the directory where this script is located
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-WRAPPER_SCRIPT="/usr/local/bin/x11vnc-wrapper.sh"
-SERVICE_FILE="/etc/systemd/system/x11vnc.service"
+WRAPPER_SCRIPT="/usr/local/bin/x0vncserver-wrapper.sh"
+SERVICE_FILE="/etc/systemd/system/x0vncserver.service"
 
 if [[ "$1" == "--uninstall" ]]; then
-  echo "🔧 Uninstalling x11vnc service and script..."
-  systemctl stop x11vnc.service || true
-  systemctl disable x11vnc.service || true
+  echo "🔧 Uninstalling x0vncserver service and script..."
+  systemctl stop x0vncserver.service || true
+  systemctl disable x0vncserver.service || true
   rm -f "$WRAPPER_SCRIPT"
   rm -f "$SERVICE_FILE"
   systemctl daemon-reload
-  echo "✅ x11vnc service uninstalled."
+  echo "✅ x0vncserver service uninstalled."
   exit 0
 fi
 
-# Check if x11vnc is installed
-if ! command -v x11vnc >/dev/null 2>&1; then
-    echo "ERROR: x11vnc is not installed on this system."
-    echo "Please install x11vnc before running this script again."
+# Check if x0vncserver is installed
+if ! command -v x0vncserver >/dev/null 2>&1; then
+    echo "ERROR: x0vncserver is not installed on this system."
+    echo "Please install x0vncserver (TigerVNC) before running this script again."
     exit 1
 fi
 
-echo "🛠 Copying x11vnc wrapper script with GDM and SDDM support..."
+echo "🛠 Copying x0vncserver wrapper script with GDM and SDDM support..."
 
 cp "$SCRIPT_DIR/src/x11vnc-wrapper.sh" "$WRAPPER_SCRIPT"
 
@@ -35,7 +35,7 @@ echo "🛠 Creating systemd service..."
 
 cat << EOF > "$SERVICE_FILE"
 [Unit]
-Description=x11vnc VNC Server (localhost only)
+Description=x0vncserver VNC Server (localhost only)
 After=display-manager.service graphical.target
 Requires=display-manager.service
 
@@ -54,8 +54,8 @@ EOF
 echo "🔄 Reloading systemd and enabling service..."
 systemctl daemon-reexec
 systemctl daemon-reload
-systemctl enable x11vnc.service
-systemctl restart x11vnc.service
+systemctl enable x0vncserver.service
+systemctl restart x0vncserver.service
 
-echo "✅ x11vnc service installed and started (localhost only)."
-echo "📜 View logs: journalctl -u x11vnc.service -f"
+echo "✅ x0vncserver service installed and started (localhost only)."
+echo "📜 View logs: journalctl -u x0vncserver.service -f"

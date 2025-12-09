@@ -1,10 +1,10 @@
 # x11vnc-utils
 
-A collection of utilities for setting up and managing x11vnc VNC server with NoVNC web client support.
+A collection of utilities for setting up and managing x0vncserver (TigerVNC) VNC server with NoVNC web client support.
 
 ## Features
 
-- **x11vnc Service**: Automatic VNC server setup with support for GDM and SDDM display managers
+- **x0vncserver Service**: Automatic VNC server setup with support for GDM and SDDM display managers
 - **NoVNC Web Client**: Browser-based VNC access with auto-reconnect functionality
 - **dufs File Server**: Web file server with upload, delete, search, and archive support, authentication, and systemd integration
 - **Interactive Setup**: User-friendly installation script with configuration options
@@ -14,7 +14,7 @@ A collection of utilities for setting up and managing x11vnc VNC server with NoV
 ## System Requirements
 
 - Linux system with systemd
-- x11vnc package
+- x0vncserver package (TigerVNC)
 - Python 3 with pip
 - Git
 - Active X11 session with supported display manager
@@ -31,7 +31,7 @@ A collection of utilities for setting up and managing x11vnc VNC server with NoV
 
 ## Limitations
 
-- **No Fast User Switching**: The x11vnc wrapper does not support fast user switching. To change users, you must fully log out of your current session
+- **No Fast User Switching**: The x0vncserver wrapper does not support fast user switching. To change users, you must fully log out of your current session
 - **Display Manager Support**: Only GDM and SDDM are currently supported
 - **Single Session**: Designed for single-user desktop access
 
@@ -39,11 +39,11 @@ A collection of utilities for setting up and managing x11vnc VNC server with NoV
 
 ### Scripts
 
-- `setup.sh` - Interactive installer for x11vnc and NoVNC services
-- `install_x11vnc_gdm_sddm_service.sh` - x11vnc systemd service installer
+- `setup.sh` - Interactive installer for x0vncserver and NoVNC services
+- `install_x11vnc_gdm_sddm_service.sh` - x0vncserver systemd service installer
 - `install_novnc.sh` - NoVNC web client installer with configuration options
 - `install_dufs.sh` - dufs file server installer and uninstaller
-- `src/x11vnc-wrapper.sh` - Wrapper script for x11vnc with display manager support
+- `src/x11vnc-wrapper.sh` - Wrapper script for x0vncserver with display manager support
 
 ### Web Interface
 
@@ -69,7 +69,7 @@ A collection of utilities for setting up and managing x11vnc VNC server with NoV
 
 ## Manual Installation
 
-### Install x11vnc Service Only
+### Install x0vncserver Service Only
 
 ```bash
 sudo ./install_x11vnc_gdm_sddm_service.sh
@@ -128,25 +128,26 @@ sudo ./install_dufs.sh --uninstall
 - **Localhost binding**: Use `--localhost` for secure access requiring SSH tunneling
 - **Interface binding**: Use `--interface` to limit access to specific network interfaces
 - **Default**: Binds to all interfaces (accessible from network)
+- **Authentication**: Current setup uses no VNC authentication (open access). For password protection, configure via x0vncserver's `-PasswordFile` option or use `-SecurityTypes` for TLS encryption
 
 ## Service Management
 
 ### Check Service Status
 
 ```bash
-sudo systemctl status x11vnc novnc dufs
+sudo systemctl status x0vncserver novnc dufs
 ```
 
 ### View Service Logs
 
 ```bash
-sudo journalctl -u x11vnc -u novnc -u dufs -f
+sudo journalctl -u x0vncserver -u novnc -u dufs -f
 ```
 
 ### Restart Services
 
 ```bash
-sudo systemctl restart x11vnc novnc dufs
+sudo systemctl restart x0vncserver novnc dufs
 ```
 
 ### Uninstall All Services
@@ -157,7 +158,7 @@ To remove all x11vnc-utils services and components at once, use the provided mas
 sudo ./uninstall_all.sh
 ```
 
-This will call the uninstall routines for x11vnc, NoVNC, and dufs (if present).
+This will call the uninstall routines for x0vncserver, NoVNC, and dufs (if present).
 
 ## SSH Tunneling (for localhost-only setups)
 

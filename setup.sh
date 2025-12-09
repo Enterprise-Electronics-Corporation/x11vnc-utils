@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # VNC Utils Setup Script
-# Interactive installer for x11vnc and NoVNC services
+# Interactive installer for x0vncserver and NoVNC services
 
 # Function to ask yes/no questions
 ask_yes_no() {
@@ -166,19 +166,19 @@ if [ ! -f "./install_dufs.sh" ]; then
     exit 1
 fi
 
-# Step 1: Install x11vnc service
-echo "Step 1: x11vnc VNC Server Setup"
-echo "================================"
-print_info "The x11vnc service provides VNC access to your desktop."
+# Step 1: Install x0vncserver service
+echo "Step 1: x0vncserver VNC Server Setup"
+echo "===================================="
+print_info "The x0vncserver service provides VNC access to your desktop."
 print_info "It runs automatically and handles user login/logout."
 echo ""
-if ask_yes_no "Install x11vnc service?" "y"; then
-    print_info "Installing x11vnc service..."
+if ask_yes_no "Install x0vncserver service?" "y"; then
+    print_info "Installing x0vncserver service..."
     ./install_x11vnc_gdm_sddm_service.sh
-    print_success "x11vnc service installed successfully!"
+    print_success "x0vncserver service installed successfully!"
     INSTALL_NOVNC=true
 else
-    print_warning "Skipping x11vnc installation."
+    print_warning "Skipping x0vncserver installation."
     echo ""
     if ask_yes_no "Do you want to install NoVNC web client anyway?" "n"; then
         INSTALL_NOVNC=true
@@ -285,8 +285,8 @@ echo "             Setup Complete!"
 echo "=================================================="
 
 # Check what was installed
-if systemctl is-enabled x11vnc.service >/dev/null 2>&1; then
-    print_success "x11vnc service is installed and enabled"
+if systemctl is-enabled x0vncserver.service >/dev/null 2>&1; then
+    print_success "x0vncserver service is installed and enabled"
     print_info "VNC server will start automatically on boot"
 fi
 if systemctl is-enabled novnc.service >/dev/null 2>&1; then
@@ -311,14 +311,14 @@ if systemctl is-enabled dufs.service >/dev/null 2>&1; then
 fi
 
 print_info "Service status:"
-echo "  x11vnc:  $(systemctl is-active x11vnc.service 2>/dev/null || echo 'not installed')"
+echo "  x0vncserver: $(systemctl is-active x0vncserver.service 2>/dev/null || echo 'not installed')"
 echo "  novnc:   $(systemctl is-active novnc.service 2>/dev/null || echo 'not installed')"
 echo "  dufs:    $(systemctl is-active dufs.service 2>/dev/null || echo 'not installed')"
 
 
 print_info "Useful commands:"
-echo "  Check status: sudo systemctl status x11vnc novnc dufs"
-echo "  View logs:    sudo journalctl -u x11vnc -u novnc -u dufs -f"
+echo "  Check status: sudo systemctl status x0vncserver novnc dufs"
+echo "  View logs:    sudo journalctl -u x0vncserver -u novnc -u dufs -f"
 echo "  Uninstall:    sudo ./install_x11vnc_gdm_sddm_service.sh --uninstall"
 echo "                sudo ./install_novnc.sh --uninstall"
 echo "                sudo ./install_dufs.sh --uninstall"

@@ -41,10 +41,10 @@ fi
 
 
 if [ ! -f "./install_x11vnc_gdm_sddm_service.sh" ]; then
-    print_warning "install_x11vnc_gdm_sddm_service.sh not found, skipping x11vnc uninstall."
+    print_warning "install_x11vnc_gdm_sddm_service.sh not found, skipping x0vncserver uninstall."
 else
-    print_info "Uninstalling x11vnc service..."
-    sudo ./install_x11vnc_gdm_sddm_service.sh --uninstall || print_warning "x11vnc uninstall failed."
+    print_info "Uninstalling x0vncserver service..."
+    sudo ./install_x11vnc_gdm_sddm_service.sh --uninstall || print_warning "x0vncserver uninstall failed."
 fi
 
 print_success "All uninstall operations complete."
