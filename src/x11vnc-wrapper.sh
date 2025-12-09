@@ -8,9 +8,131 @@ log_message() {
     echo "$(date '+%Y-%m-%d %H:%M:%S') - $*" >&2
 }
 
+send_notification() {
+    local title="$1"
+    local message="$2"
+    
+    log_message "Attempting to send notification: $title"
+    
+    # Get all graphical sessions and their users
+    loginctl list-sessions --no-legend | while read session_id uid user seat tty; do
+        # Skip if no user or if it's root
+        [ -z "$user" ] && continue
+        [ "$user" = "root" ] && continue
+        
+        # Check if this is a graphical session
+        session_type=$(loginctl show-session "$session_id" -p Type --value 2>/dev/null || echo "")
+        if [ "$session_type" != "x11" ] && [ "$session_type" != "wayland" ]; then
+            log_message "Skipping non-graphical session $session_id (type: $session_type) for user $user"
+            continue
+        fi
+        
+        log_message "Found graphical session $session_id for user $user (uid: $uid, type: $session_type)"
+        
+        # The user's runtime directory
+        user_runtime_dir="/run/user/$uid"
+        
+        # Check if the user's runtime directory exists
+        if [ ! -d "$user_runtime_dir" ]; then
+            log_message "Runtime directory $user_runtime_dir does not exist for user $user"
+            continue
+        fi
+        
+        # Check if the D-Bus socket exists
+        if [ ! -S "$user_runtime_dir/bus" ]; then
+            log_message "D-Bus socket not found at $user_runtime_dir/bus for user $user"
+            continue
+        fi
+        
+        # Method 1: Use systemd-run --machine to run in the user's session context
+        # This is the most reliable method as it properly inherits the user's
+        # systemd session including D-Bus and display server access
+        log_message "Trying systemd-run --machine method for user $user..."
+        if systemd-run --machine="$user@.host" --user --pipe --wait --quiet \
+            /usr/bin/notify-send -u critical "$title" "$message" 2>&1; then
+            log_message "✅ Successfully sent notification to user $user via systemd-run --machine"
+            continue
+        else
+            log_message "systemd-run --machine method failed for user $user (exit code: $?)"
+        fi
+        
+        # Method 2: Try machinectl shell which also runs in the user's context
+        log_message "Trying machinectl shell method for user $user..."
+        if machinectl shell --uid="$user" .host /usr/bin/notify-send -u critical "$title" "$message" 2>&1; then
+            log_message "✅ Successfully sent notification to user $user via machinectl"
+            continue
+        else
+            log_message "machinectl method failed for user $user"
+        fi
+        
+        # Method 3: Try su with login shell which may inherit PAM session
+        log_message "Trying su -l method for user $user..."
+        if su -l "$user" -c "notify-send -u critical '$title' '$message'" 2>&1; then
+            log_message "✅ Successfully sent notification to user $user via su -l"
+            continue
+        else
+            log_message "su -l method failed for user $user"
+        fi
+        
+        # Method 4: Fallback - use wall to send message to all terminals
+        log_message "All notification methods failed, falling back to wall for user $user"
+        echo "$title: $message" | wall 2>/dev/null || true
+        
+    done
+}
+
 cleanup_stale_x0vncserver() {
     pkill -f "x0vncserver.*$RFBPORT" 2>/dev/null || true
     sleep 1
+}
+
+run_vnc_with_notifications() {
+    local username="$1"
+    local display="$2"
+    local auth_file="$3"
+    
+    local logfile="/tmp/x0vncserver_${display}.log"
+    local lastline=0
+    
+    log_message "Starting x0vncserver monitoring for $username on $display"
+    
+    # Start x0vncserver in background and capture its output
+    sudo -u "$username" \
+        env DISPLAY="$display" XAUTHORITY="$auth_file" \
+        $X0VNCSERVER_BIN -display "$display" -SecurityTypes=None -AlwaysShared -rfbport $RFBPORT $LISTEN_OPTION >"$logfile" 2>&1 &
+    
+    local vnc_pid=$!
+    log_message "x0vncserver started with PID $vnc_pid"
+    
+    # Monitor the logfile for connection messages
+    # x0vncserver logs connection events like: "Got connection from 192.168.1.100"
+    while kill -0 $vnc_pid 2>/dev/null; do
+        # Check for new log entries indicating connections
+        if [[ -f "$logfile" ]]; then
+            # Look for connection messages in the log
+            local new_lines
+            new_lines=$(tail -n +$((lastline + 1)) "$logfile" 2>/dev/null | grep -i "connection\|accepted")
+            
+            if [[ -n "$new_lines" ]]; then
+                # Extract connection info if available
+                local conn_info
+                conn_info=$(echo "$new_lines" | head -n1)
+                log_message "📡 VNC Connection detected: $conn_info"
+                
+                # Send notification about the connection
+                send_notification "VNC Client Connected" "A user has connected to your VNC session"
+            fi
+            
+            # Update lastline count
+            lastline=$(wc -l < "$logfile" 2>/dev/null || echo 0)
+        fi
+        
+        sleep 1
+    done
+    
+    # x0vncserver exited, clean up log
+    rm -f "$logfile"
+    log_message "🔁 x0vncserver exited (PID $vnc_pid), restarting after crash or logout"
 }
 
 find_x_display() {
@@ -184,10 +306,8 @@ while true; do
         if ! id "$username" >/dev/null 2>&1; then
             log_message "❌ User $username not found, falling back to X process auth detection"
         else
-            # Run x0vncserver as the logged-in user
-            exec sudo -u "$username" \
-                env DISPLAY="$DISPLAY" XAUTHORITY="$auth_file" \
-                $X0VNCSERVER_BIN -display "$DISPLAY" -SecurityTypes=None -AlwaysShared -rfbport $RFBPORT $LISTEN_OPTION
+            # Run x0vncserver as the logged-in user and monitor for connections
+            run_vnc_with_notifications "$username" "$DISPLAY" "$auth_file"
         fi
     fi
     
@@ -195,8 +315,8 @@ while true; do
     AUTH_FILE=$(find_x_auth_from_process "$DISPLAY")
     if [[ -n "$AUTH_FILE" ]]; then
         log_message "✅ Using auth file from X process: $AUTH_FILE on DISPLAY $DISPLAY"
-        exec env XAUTHORITY="$AUTH_FILE" \
-            $X0VNCSERVER_BIN -display "$DISPLAY" -SecurityTypes=None -AlwaysShared -rfbport $RFBPORT $LISTEN_OPTION
+        # Run x0vncserver and monitor for connections (running as root)
+        run_vnc_with_notifications "root" "$DISPLAY" "$AUTH_FILE"
     fi
     
     # Fallback to GDM detection
@@ -204,17 +324,18 @@ while true; do
         AUTH_FILE=$(find_gdm_auth)
         if [[ -n "$AUTH_FILE" ]]; then
             log_message "✅ GDM greeter: using XAUTHORITY $AUTH_FILE on DISPLAY $DISPLAY"
-            exec env XAUTHORITY="$AUTH_FILE" \
-                $X0VNCSERVER_BIN -display "$DISPLAY" -SecurityTypes=None -AlwaysShared -rfbport $RFBPORT $LISTEN_OPTION
+            log_message "ℹ️  GDM greeter mode - VNC available for login"
+            # Run x0vncserver and monitor for connections (running as root for greeter)
+            run_vnc_with_notifications "root" "$DISPLAY" "$AUTH_FILE"
         fi
     fi
 
     # Last resort - x0vncserver requires XAUTHORITY to be set; if we can't find it, we'll try without explicit auth
     log_message "⚠️  No valid Xauthority found, attempting x0vncserver with DISPLAY=$DISPLAY only"
-    $X0VNCSERVER_BIN -display "$DISPLAY" -SecurityTypes=None -AlwaysShared -rfbport $RFBPORT $LISTEN_OPTION || {
-        log_message "❌ x0vncserver failed, restarting in 10 seconds"
-        sleep 10
-    }
+    # Create a temporary empty auth file for this attempt
+    local temp_auth=$(mktemp)
+    trap "rm -f $temp_auth" EXIT
+    run_vnc_with_notifications "root" "$DISPLAY" "$temp_auth"
 
     log_message "🔁 Restarting after crash or logout"
     sleep 2
