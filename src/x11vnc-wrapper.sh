@@ -195,21 +195,23 @@ while true; do
     AUTH_FILE=$(find_x_auth_from_process "$DISPLAY")
     if [[ -n "$AUTH_FILE" ]]; then
         log_message "✅ Using auth file from X process: $AUTH_FILE on DISPLAY $DISPLAY"
-        exec $X0VNCSERVER_BIN -auth "$AUTH_FILE" -display "$DISPLAY" -SecurityTypes=None -AlwaysShared -rfbport $RFBPORT $LISTEN_OPTION
+        exec env XAUTHORITY="$AUTH_FILE" \
+            $X0VNCSERVER_BIN -display "$DISPLAY" -SecurityTypes=None -AlwaysShared -rfbport $RFBPORT $LISTEN_OPTION
     fi
     
     # Fallback to GDM detection
     if pgrep -x gdm >/dev/null 2>&1; then
         AUTH_FILE=$(find_gdm_auth)
         if [[ -n "$AUTH_FILE" ]]; then
-            log_message "✅ GDM greeter: using -auth $AUTH_FILE on DISPLAY $DISPLAY"
-            exec $X0VNCSERVER_BIN -auth "$AUTH_FILE" -display "$DISPLAY" -SecurityTypes=None -AlwaysShared -rfbport $RFBPORT $LISTEN_OPTION
+            log_message "✅ GDM greeter: using XAUTHORITY $AUTH_FILE on DISPLAY $DISPLAY"
+            exec env XAUTHORITY="$AUTH_FILE" \
+                $X0VNCSERVER_BIN -display "$DISPLAY" -SecurityTypes=None -AlwaysShared -rfbport $RFBPORT $LISTEN_OPTION
         fi
     fi
 
-    # Last resort - try -auth guess
-    log_message "⚠️  No valid Xauthority found, trying -auth guess on DISPLAY $DISPLAY"
-    $X0VNCSERVER_BIN -auth guess -display "$DISPLAY" -SecurityTypes=None -AlwaysShared -rfbport $RFBPORT $LISTEN_OPTION || {
+    # Last resort - x0vncserver requires XAUTHORITY to be set; if we can't find it, we'll try without explicit auth
+    log_message "⚠️  No valid Xauthority found, attempting x0vncserver with DISPLAY=$DISPLAY only"
+    $X0VNCSERVER_BIN -display "$DISPLAY" -SecurityTypes=None -AlwaysShared -rfbport $RFBPORT $LISTEN_OPTION || {
         log_message "❌ x0vncserver failed, restarting in 10 seconds"
         sleep 10
     }
