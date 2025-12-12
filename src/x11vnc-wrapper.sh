@@ -139,16 +139,16 @@ run_vnc_with_notifications() {
                 local client_ip
                 client_ip=$(echo "$conn_info" | grep -oP '(\d+\.\d+\.\d+\.\d+|[0-9a-fA-F:]+)' | head -n1)
                 
-                # Create a meaningful notification message with the client IP if available
+                # Create a concise notification message with the client IP if available
                 local notification_message
                 if [[ -n "$client_ip" ]]; then
-                    notification_message="A user has connected to your VNC session from $client_ip"
+                    notification_message="Connected from $client_ip"
                 else
-                    notification_message="A user has connected to your VNC session"
+                    notification_message="VNC connection active"
                 fi
                 
                 # Send notification about the connection
-                send_notification "VNC Client Connected" "$notification_message"
+                send_notification "VNC Session" "$notification_message"
             fi
             
             # Update lastline count
