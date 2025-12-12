@@ -121,13 +121,13 @@ run_vnc_with_notifications() {
     log_message "x0vncserver started with PID $vnc_pid"
     
     # Monitor the logfile for connection messages
-    # x0vncserver logs connection events like: "Got connection from 192.168.1.100"
+    # x0vncserver logs connection events like: "Connections: Accepted: 192.168.1.100::5900"
     while kill -0 $vnc_pid 2>/dev/null; do
         # Check for new log entries indicating connections
         if [[ -f "$logfile" ]]; then
-            # Look for connection messages in the log
+            # Look for ACCEPTED connection messages only (not Listening, Closing, or other events)
             local new_lines
-            new_lines=$(tail -n +$((lastline + 1)) "$logfile" 2>/dev/null | grep -i "connection\|accepted")
+            new_lines=$(tail -n +$((lastline + 1)) "$logfile" 2>/dev/null | grep -i "accepted")
             
             if [[ -n "$new_lines" ]]; then
                 # Extract connection info if available
@@ -136,13 +136,41 @@ run_vnc_with_notifications() {
                 log_message "📡 VNC Connection detected: $conn_info"
                 
                 # Try to extract IP address from connection info
+                # Pattern: "Connections: Accepted: 127.0.0.1::38402"
                 local client_ip
-                client_ip=$(echo "$conn_info" | grep -oP '(\d+\.\d+\.\d+\.\d+|[0-9a-fA-F:]+)' | head -n1)
+                client_ip=$(echo "$conn_info" | grep -oE '([0-9]{1,3}\.){3}[0-9]{1,3}' | head -n1)
+                
+                # If the connection is from localhost, try to get the real IP from port 8080 (NoVNC proxy)
+                if [[ "$client_ip" == "127.0.0.1" ]]; then
+                    log_message "Detected localhost connection, checking for real client IP on port 8080..."
+                    # Look for non-localhost connections to port 8080 (websockify/NoVNC gateway)
+                    local novnc_ip
+                    novnc_ip=$(ss -tnp 2>/dev/null | grep ':8080' | grep ESTAB | grep -v '127.0.0.1:8080' | \
+                        awk '{print $5}' | cut -d: -f1 | head -n1)
+                    
+                    if [[ -n "$novnc_ip" ]] && [[ "$novnc_ip" != "127.0.0.1" ]]; then
+                        client_ip="$novnc_ip"
+                        log_message "Found real client IP from port 8080 (NoVNC): $client_ip"
+                    fi
+                fi
                 
                 # Create a concise notification message with the client IP if available
                 local notification_message
                 if [[ -n "$client_ip" ]]; then
                     notification_message="Connected from $client_ip"
+                    
+                    # Attempt lazy reverse DNS lookup (non-blocking, with timeout)
+                    local hostname
+                    hostname=$(timeout 2 dig +short -x "$client_ip" 2>/dev/null | sed 's/\.$//' | head -n1)
+                    if [[ -z "$hostname" ]]; then
+                        # Try alternate method if dig is not available
+                        hostname=$(timeout 2 host "$client_ip" 2>/dev/null | awk '{print $NF}' | sed 's/\.$//' | head -n1)
+                    fi
+                    
+                    if [[ -n "$hostname" ]] && [[ "$hostname" != "$client_ip" ]]; then
+                        log_message "Reverse DNS resolved: $client_ip -> $hostname"
+                        notification_message="Connected from $hostname ($client_ip)"
+                    fi
                 else
                     notification_message="VNC connection active"
                 fi
