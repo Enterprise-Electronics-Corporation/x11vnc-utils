@@ -16,9 +16,19 @@ send_notification() {
     
     # Get all graphical sessions and their users
     loginctl list-sessions --no-legend | while read session_id uid user seat tty; do
-        # Skip if no user or if it's root
+        # Skip if no user or if it's root, system user, or display manager
         [ -z "$user" ] && continue
         [ "$user" = "root" ] && continue
+        [ "$user" = "sddm" ] && continue
+        [ "$user" = "gdm" ] && continue
+        [ "$user" = "lightdm" ] && continue
+        [ "$user" = "_sddm" ] && continue
+        
+        # Skip system users (uid < 1000 typically, but be explicit with display managers)
+        if [ "$uid" -lt 1000 ] 2>/dev/null; then
+            log_message "Skipping system user session $session_id (user: $user, uid: $uid)"
+            continue
+        fi
         
         # Check if this is a graphical session (x11 or wayland)
         # Note: Some systems report "unspecified" type for active sessions, so we also check
@@ -60,13 +70,15 @@ send_notification() {
             log_message "systemd-run --machine method failed for user $user (exit code: $?)"
         fi
         
-        # Method 2: Try machinectl shell which also runs in the user's context
-        log_message "Trying machinectl shell method for user $user..."
-        if machinectl shell --uid="$user" .host /usr/bin/notify-send -u critical "$title" "$message" 2>&1; then
-            log_message "✅ Successfully sent notification to user $user via machinectl"
-            continue
-        else
-            log_message "machinectl method failed for user $user"
+        # Method 2: Try machinectl shell which also runs in the user's context (skip if not available)
+        if command -v machinectl >/dev/null 2>&1; then
+            log_message "Trying machinectl shell method for user $user..."
+            if machinectl shell --uid="$user" .host /usr/bin/notify-send -u critical "$title" "$message" 2>&1; then
+                log_message "✅ Successfully sent notification to user $user via machinectl"
+                continue
+            else
+                log_message "machinectl method failed for user $user"
+            fi
         fi
         
         # Method 3: Try su with login shell which may inherit PAM session
