@@ -20,19 +20,23 @@ send_notification() {
         [ -z "$user" ] && continue
         [ "$user" = "root" ] && continue
         
-        # Check if this is a graphical session
+        # Check if this is a graphical session (x11 or wayland)
+        # Note: Some systems report "unspecified" type for active sessions, so we also check
+        # if a runtime directory exists as a sign of an active user session
         session_type=$(loginctl show-session "$session_id" -p Type --value 2>/dev/null || echo "")
-        if [ "$session_type" != "x11" ] && [ "$session_type" != "wayland" ]; then
+        
+        # Skip clearly non-graphical types (tty without X, services, etc)
+        if [ "$session_type" = "tty" ] && ! pgrep -a -f "Xorg|gdm-x-session|gnome-session|kde|xfce" | grep -q "$user"; then
             log_message "Skipping non-graphical session $session_id (type: $session_type) for user $user"
             continue
         fi
         
-        log_message "Found graphical session $session_id for user $user (uid: $uid, type: $session_type)"
+        log_message "Found session $session_id for user $user (uid: $uid, type: $session_type)"
         
         # The user's runtime directory
         user_runtime_dir="/run/user/$uid"
         
-        # Check if the user's runtime directory exists
+        # Check if the user's runtime directory exists (sign of active session)
         if [ ! -d "$user_runtime_dir" ]; then
             log_message "Runtime directory $user_runtime_dir does not exist for user $user"
             continue
