@@ -174,7 +174,7 @@ print_info "It runs automatically and handles user login/logout."
 echo ""
 if ask_yes_no "Install x0vncserver service?" "y"; then
     print_info "Installing x0vncserver service..."
-    ./install_x11vnc_gdm_sddm_service.sh
+    ./install_x11vnc_gdm_sddm_service.sh || exit 1
     print_success "x0vncserver service installed successfully!"
     INSTALL_NOVNC=true
 else
@@ -225,7 +225,7 @@ if [ "$INSTALL_NOVNC" = true ]; then
         # Install NoVNC
         echo ""
         print_info "Installing NoVNC with selected configuration..."
-        ./install_novnc.sh "${NOVNC_ARGS[@]}"
+        ./install_novnc.sh "${NOVNC_ARGS[@]}" || exit 1
         print_success "NoVNC web client installed successfully!"
     else
         print_warning "Skipping NoVNC installation."
@@ -269,9 +269,9 @@ if ask_yes_no "Install dufs file server?" "y"; then
     # Call install_dufs.sh
     print_info "Installing dufs with selected configuration..."
     if [ -n "$DUFS_AUTH" ]; then
-        ./install_dufs.sh --port "$DUFS_PORT" --root "$DUFS_ROOT" --interface "$DUFS_INTERFACE" --auth "$DUFS_AUTH"
+        ./install_dufs.sh --port "$DUFS_PORT" --root "$DUFS_ROOT" --interface "$DUFS_INTERFACE" --auth "$DUFS_AUTH" || exit 1
     else
-        ./install_dufs.sh --port "$DUFS_PORT" --root "$DUFS_ROOT" --interface "$DUFS_INTERFACE"
+        ./install_dufs.sh --port "$DUFS_PORT" --root "$DUFS_ROOT" --interface "$DUFS_INTERFACE" || exit 1
     fi
     print_success "dufs file server installed successfully!"
 else
